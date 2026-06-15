@@ -5,5 +5,10 @@ variable "bucket_name" {
 
 variable "bucket_location" {
   type=string
-  default = "cicd-usecase-830"
+  default = "us-central1"
+}
+
+variable "gcp_project_id" {
+  type=string
+  default = "saas-demo-496915"
 }
