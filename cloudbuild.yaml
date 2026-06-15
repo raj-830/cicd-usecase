@@ -1,0 +1,55 @@
+steps:
+  # ==========================================
+  # Step 1: Create the Dockerfile dynamically
+  # ==========================================
+  - name: 'ubuntu'
+    id: 'Create Dockerfile'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        cat <<EOF > Dockerfile
+        FROM scratch
+        COPY template.zip ./
+        EOF
+        echo "Dockerfile created successfully."
+
+  # ==========================================
+  # Step 2: Install tools, zip, build with podman, and push
+  # ==========================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Build and Push with Podman'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # 1. Install podman and zip
+        apt-get update && apt-get -y install podman zip
+
+        # 2. Zip the repository contents (excluding the Dockerfile itself)
+        zip -r template.zip . -x Dockerfile
+
+        # 3. Build the image using Podman with annotations
+        # Using $SHORT_SHA ensures every commit build has a unique tag
+        podman build . \
+          -t $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:$SHORT_SHA \
+          -t $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest \
+          --annotation=com.easysaas.engine.type=im \
+          --annotation=com.easysaas.engine.version=1.5.7 \
+          --no-cache
+
+        # 4. Authenticate Podman to Artifact Registry using the short-lived gcloud token
+        gcloud auth print-access-token | podman login -u oauth2accesstoken --password-stdin $_REGION-docker.pkg.dev
+
+        # 5. Push both tags (the unique commit SHA and the 'latest' tag)
+        podman push $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:$SHORT_SHA
+        podman push $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest
+
+# Define your environment variables here
+substitutions:
+  _REGION: 'us-central1'       # e.g., us-central1
+  _REPO_NAME: 'cicd-usecase' # Your Artifact Registry Repository Name
+  _IMAGE_NAME: 'test-gcs1'  # Your desired image name
+
+options:
+  logging: CLOUD_LOGGING_ONLY
