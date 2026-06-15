@@ -51,9 +51,6 @@ steps:
     args:
       - '-c'
       - |
-        # Ensure beta components are available in the cloud-sdk container
-        gcloud components install beta --quiet     
-
         # App-Lifecycle Manager commands are currently in beta component
         gcloud beta app-lifecycle-manager releases create "$_ALM_RELEASE_NAME" \
             --project="$_ALM_PROJECT_ID" \
@@ -70,7 +67,7 @@ substitutions:
   _IMAGE_NAME: 'test-gcs1'
 
   # App-Lifecycle Manager Configuration
-  _ALM_RELEASE_NAME: 'cicd-rls1'
+  _ALM_RELEASE_NAME: 'cicd-rls2'
   _ALM_PROJECT_ID: 'saas-demo-496915'
   _ALM_LOCATION: 'us-central1'
   _ALM_UK_NAME: 'cicd-uk1'
