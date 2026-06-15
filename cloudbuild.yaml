@@ -29,11 +29,9 @@ steps:
         # 2. Zip the repository contents (excluding the Dockerfile itself)
         zip -r template.zip . -x Dockerfile
 
-        # 3. Build the image using Podman with annotations
-        # Using $SHORT_SHA ensures every commit build has a unique tag
+        # 3. Build the image using Podman with annotations targeting the external project
         podman build . \
-          -t $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:$SHORT_SHA \
-          -t $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest \
+          -t $_REGION-docker.pkg.dev/$_ARTIFACT_PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest \
           --annotation=com.easysaas.engine.type=im \
           --annotation=com.easysaas.engine.version=1.5.7 \
           --no-cache
@@ -41,15 +39,41 @@ steps:
         # 4. Authenticate Podman to Artifact Registry using the short-lived gcloud token
         gcloud auth print-access-token | podman login -u oauth2accesstoken --password-stdin $_REGION-docker.pkg.dev
 
-        # 5. Push both tags (the unique commit SHA and the 'latest' tag)
-        podman push $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:$SHORT_SHA
-        podman push $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest
+        # 5. Push both tags to the external project registry
+        podman push $_REGION-docker.pkg.dev/$_ARTIFACT_PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest
+
+  # ==========================================
+  # Step 3: Create App-Lifecycle Manager Release
+  # ==========================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Create ALM Release'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Ensure beta components are available in the cloud-sdk container
+        gcloud components install beta --quiet     
+         
+        # App-Lifecycle Manager commands are currently in beta component
+        gcloud beta app-lifecycle-manager releases create "$_ALM_RELEASE_NAME" \
+            --project="$_ALM_PROJECT_ID" \
+            --location="$_ALM_LOCATION" \
+            --unit-kind="$_ALM_UK_NAME" \
+            --blueprint-package="$_REGION-docker.pkg.dev/$_ARTIFACT_PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest"
 
 # Define your environment variables here
 substitutions:
-  _REGION: 'us-central1'       # e.g., us-central1
-  _REPO_NAME: 'cicd-usecase' # Your Artifact Registry Repository Name
-  _IMAGE_NAME: 'test-gcs1'  # Your desired image name
+  # Artifact Registry Configuration
+  _REGION: 'us-central1'
+  _ARTIFACT_PROJECT_ID: 'your-registry-project-id' # Target registry project
+  _REPO_NAME: 'cicd-usecase'
+  _IMAGE_NAME: 'test-gcs1'
+
+  # App-Lifecycle Manager Configuration
+  _ALM_RELEASE_NAME: 'cicd-rls1'
+  _ALM_PROJECT_ID: 'saas-demo-496915'
+  _ALM_LOCATION: 'us-central1'
+  _ALM_UK_NAME: 'cicd-uk1'
 
 options:
   logging: CLOUD_LOGGING_ONLY
