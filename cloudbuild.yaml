@@ -58,6 +58,23 @@ steps:
             --unit-kind="$_ALM_UK_NAME" \
             --blueprint-package="$_REGION-docker.pkg.dev/$_ARTIFACT_PROJECT_ID/$_REPO_NAME/$_IMAGE_NAME:latest"
 
+
+  # ===============================================
+  # Step 4: Update App-Lifecycle Manager Unit-kind
+  # ===============================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Update ALM Unit Kind'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # App-Lifecycle Manager commands are currently in beta component
+        gcloud beta app-lifecycle-manager unit-kinds update $_ALM_UNIT_KIND_NAME \
+            --project="$_ALM_PROJECT_ID" \
+            --location="$_ALM_LOCATION" \
+            --default-release="$_ALM_DEFAULT_RELEASE"
+
+
 # Define your environment variables here
 substitutions:
   # Artifact Registry Configuration
@@ -67,10 +84,12 @@ substitutions:
   _IMAGE_NAME: 'test-gcs1'
 
   # App-Lifecycle Manager Configuration
-  _ALM_RELEASE_NAME: 'cicd-rls2'
+  _ALM_RELEASE_NAME: 'cicd-rls3'
   _ALM_PROJECT_ID: 'saas-demo-496915'
   _ALM_LOCATION: 'us-central1'
   _ALM_UK_NAME: 'cicd-uk1'
+  _ALM_UNIT_KIND_NAME: 'cicd-uk1'
+  _ALM_DEFAULT_RELEASE: 'cicd-rls3'
 
 options:
   logging: CLOUD_LOGGING_ONLY
