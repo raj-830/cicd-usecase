@@ -53,7 +53,7 @@ steps:
       - |
         # Ensure beta components are available in the cloud-sdk container
         gcloud components install beta --quiet     
-         
+
         # App-Lifecycle Manager commands are currently in beta component
         gcloud beta app-lifecycle-manager releases create "$_ALM_RELEASE_NAME" \
             --project="$_ALM_PROJECT_ID" \
@@ -65,7 +65,7 @@ steps:
 substitutions:
   # Artifact Registry Configuration
   _REGION: 'us-central1'
-  _ARTIFACT_PROJECT_ID: 'your-registry-project-id' # Target registry project
+  _ARTIFACT_PROJECT_ID: 'saas-demo-496915' # Target registry project
   _REPO_NAME: 'cicd-usecase'
   _IMAGE_NAME: 'test-gcs1'
 
